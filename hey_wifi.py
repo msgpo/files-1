@@ -25,11 +25,12 @@ import quiet
 from voice_engine.source import Source
 
 
-PROFILES = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'quiet-profiles.json')
+PROFILES = [os.path.join(os.path.dirname(os.path.abspath(__file__)), 'quiet-profiles.json'),
+            '/usr/local/share/quiet/quiet-profiles.json']
 
 
 class Decoder(object):
-    def __init__(self, channels=1, select=0, bits_per_sample=16):
+    def __init__(self, channels=1, select=0, bits_per_sample=16, profiles=None):
         self.channels = channels
         self.select = select
         self.done = None
@@ -42,6 +43,17 @@ class Decoder(object):
         else:
             raise ValueError('{} bits per sample is not supported'.format(bits_per_sample))
 
+        if not profiles:
+            for file_path in PROFILES:
+                if os.path.isfile(file_path):
+                    self.profiles = file_path
+                    break
+            else:
+                raise ValueError('no quiet-profiles.json found')
+
+        else:
+            self.profiles = profiles
+
     def start(self):
         self.done = False
         if not (self.thread and self.thread.is_alive()):
@@ -52,7 +64,9 @@ class Decoder(object):
         self.queue.put(data)
 
     def run(self):
-        decoder = quiet.Decoder(sample_rate=48000, profile_name='wave', profiles=PROFILES)
+
+
+        decoder = quiet.Decoder(sample_rate=48000, profile_name='wave', profiles=self.profiles)
 
         while not self.done:
             audio = self.queue.get()
