@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 ec=ec.service
 
@@ -11,7 +11,7 @@ systemctl stop $ec
 fi
 
 # run wifi setup service
-python3 main.py
+python3 /usr/local/bin/hey_wifi.py
 mosquitto_pub -t '/voicen/io/leds/off' -m '1'
 
 

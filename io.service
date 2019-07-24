@@ -4,8 +4,8 @@ After=mosquitto.service
 
 [Service]
 Type=simple
-WorkingDirectory=/home/pi/wave
-ExecStart=/usr/bin/python3 /home/pi/wave/io_controller.py
+WorkingDirectory=/tmp
+ExecStart=/usr/bin/python3 /usr/local/bin/io_service.py
 Restart=always
 User=root
 
