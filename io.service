@@ -1,0 +1,15 @@
+[Unit]
+Description=IO service
+After=mosquitto.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/pi/wave
+ExecStart=/usr/bin/python3 /home/pi/wave/io_controller.py
+Restart=always
+User=root
+
+[Install]
+WantedBy=sysinit.target
+
+

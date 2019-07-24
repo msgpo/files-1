@@ -1,0 +1,12 @@
+[Unit]
+Description=Setup WiFi through sound wave
+After=alsa-restore.service mosquitto.service
+ 
+[Service]
+Type=simple
+WorkingDirectory=/home/pi/wave
+ExecStart=/home/pi/wave/voicen_wifi_setup
+User=root
+ 
+[Install]
+WantedBy=sysinit.target

@@ -1,0 +1,24 @@
+#!/bin/sh
+
+ec=ec.service
+
+systemctl is-active $ec
+context=$?
+if [ $context -eq 0 ]
+then
+echo "$ec is started, stop it now"
+systemctl stop $ec
+fi
+
+# run wifi setup service
+python3 main.py
+mosquitto_pub -t '/voicen/io/leds/off' -m '1'
+
+
+if [ $context -eq 0 ]
+then
+echo "recover $ec"
+systemctl start $ec
+fi
+
+
