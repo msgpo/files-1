@@ -124,10 +124,10 @@ def main():
         os.system(cmd)
         
         cmd = 'nmcli connection delete "{}"'.format(ssid)
-        #os.system(cmd)
+        os.system(cmd)
         
         cmd = 'nmcli device wifi connect {} password {}'.format(ssid, password)
-        if 0: # os.system(cmd) != 0:
+        if os.system(cmd) != 0:
             print('Failed to connect the Wi-Fi network')
             return
 
