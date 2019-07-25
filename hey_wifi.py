@@ -41,7 +41,8 @@ class Decoder(object):
         elif bits_per_sample == 32:
             self.dtype = np.int32
         else:
-            raise ValueError('{} bits per sample is not supported'.format(bits_per_sample))
+            raise ValueError(
+                '{} bits per sample is not supported'.format(bits_per_sample))
 
         if not profiles:
             for file_path in PROFILES:
@@ -65,8 +66,8 @@ class Decoder(object):
 
     def run(self):
 
-
-        decoder = quiet.Decoder(sample_rate=48000, profile_name='wave', profiles=self.profiles)
+        decoder = quiet.Decoder(
+            sample_rate=48000, profile_name='wave', profiles=self.profiles)
 
         while not self.done:
             audio = self.queue.get()
@@ -77,7 +78,6 @@ class Decoder(object):
             data = decoder.decode(audio)
             if data is not None:
                 self.on_data(data)
-
 
     def stop(self):
         self.done = True
@@ -90,7 +90,8 @@ class Decoder(object):
 
 
 def get_ip_info():
-    ip_info = subprocess.check_output(r"ip a | sed -ne '/127.0.0.1/!{s/^[ \t]*inet[ \t]*\([0-9.]\+\)\/.*$/\1/p}'", shell=True)
+    ip_info = subprocess.check_output(
+        r"ip a | sed -ne '/127.0.0.1/!{s/^[ \t]*inet[ \t]*\([0-9.]\+\)\/.*$/\1/p}'", shell=True)
     ip_info = ip_info.strip()
     # return ip_info.split('\n')
     return ip_info
@@ -100,21 +101,27 @@ def encrypt(key, data):
     m = hashlib.md5()
     m.update(key)
     counter = random.SystemRandom().randint(0, 1 << 15)
-    aes = AES.new(m.digest(), AES.MODE_CTR, counter=Counter.new(128, initial_value=counter))
+    aes = AES.new(m.digest(), AES.MODE_CTR,
+                  counter=Counter.new(128, initial_value=counter))
     encrypted = aes.encrypt(data)
-    return { 'id': counter, 'data': base64.b64encode(encrypted).decode() }
+    return {'id': counter, 'data': base64.b64encode(encrypted).decode()}
 
 
 def main():
-    src = Source(rate=48000, channels=4, device_name='ac108', bits_per_sample=32)
+    src = Source(rate=48000, channels=4,
+                 device_name='ac108', bits_per_sample=32)
     decoder = Decoder(channels=src.channels, select=0, bits_per_sample=32)
 
     def on_data(data):
         ssid_length = data[0]
-        ssid = data[1:ssid_length+1].tostring().decode('utf-8')
-        password_length = data[ssid_length+1]
-        password = data[ssid_length+2:ssid_length+password_length+2].tostring().decode('utf-8')
+        ssid = data[1:ssid_length + 1].tostring().decode('utf-8')
+        password_length = data[ssid_length + 1]
+        password = data[ssid_length + 2:ssid_length +
+                        password_length + 2].tostring().decode('utf-8')
         print('SSID: {}\nPassword: {}'.format(ssid, password))
+
+        cmd = 'mosquitto_pub -t /voicen/hey_wifi -m 2'
+        os.system(cmd)
 
         if os.system('which nmcli >/dev/null') != 0:
             print('nmcli is not found')
@@ -122,10 +129,10 @@ def main():
 
         cmd = 'nmcli device wifi rescan'
         os.system(cmd)
-        
+
         cmd = 'nmcli connection delete "{}"'.format(ssid)
         os.system(cmd)
-        
+
         cmd = 'nmcli device wifi connect {} password {}'.format(ssid, password)
         if os.system(cmd) != 0:
             print('Failed to connect the Wi-Fi network')
@@ -140,19 +147,24 @@ def main():
         print(ip_info)
         decoder.done = True
 
+        cmd = 'mosquitto_pub -t /voicen/hey_wifi -m 3'
+        os.system(cmd)
+
         message = encrypt(data, ip_info)
         if os.system('which mosquitto_pub >/dev/null') != 0:
             print('mosquitto_pub is not found')
 
         # cmd = "mosquitto_pub -h iot.eclipse.org -q 2 -t '/voicen/channel' -m '{}'".format(json.dumps(message))
-        cmd = "mosquitto_pub -h test.mosquitto.org -q 2 -t '/voicen/channel' -m '{}'".format(json.dumps(message))
+        cmd = "mosquitto_pub -h test.mosquitto.org -q 2 -t '/voicen/channel' -m '{}'".format(
+            json.dumps(message))
         print(cmd)
         if os.system(cmd) != 0:
             print('Failed to send message to the web page')
             return
 
         print('Done')
-
+        cmd = 'mosquitto_pub -t /voicen/hey_wifi -m 4'
+        os.system(cmd)
 
     decoder.on_data = on_data
 
@@ -171,4 +183,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    

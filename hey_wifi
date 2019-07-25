@@ -2,6 +2,7 @@
 
 ec=ec.service
 
+
 systemctl is-active $ec
 context=$?
 if [ $context -eq 0 ]
@@ -10,9 +11,10 @@ echo "$ec is started, stop it now"
 systemctl stop $ec
 fi
 
-# run wifi setup service
+
+mosquitto_pub -t '/voicen/hey_wifi' -m '1'
 python3 /usr/local/bin/hey_wifi.py
-mosquitto_pub -t '/voicen/io/leds/off' -m '1'
+mosquitto_pub -t '/voicen/hey_wifi' -m '0'
 
 
 if [ $context -eq 0 ]
