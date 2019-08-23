@@ -91,9 +91,8 @@ class Decoder(object):
 
 def get_ip_info():
     ip_info = subprocess.check_output(
-        r"ip a | sed -ne '/127.0.0.1/!{s/^[ \t]*inet[ \t]*\([0-9.]\+\)\/.*$/\1/p}'", shell=True)
+        r"ip a show wlan0 | sed -ne 's/^[ \t]*inet[ \t]*\([0-9.]\+\)\/.*$/\1/p'", shell=True)
     ip_info = ip_info.strip()
-    # return ip_info.split('\n')
     return ip_info
 
 
@@ -156,9 +155,11 @@ def main():
 
         cmd = "mosquitto_pub -h v.tangram7.net -u mqtt -P mqtt -q 1 -t '/voicen/channel' -m '{}'".format(json.dumps(message))
         print(cmd)
-        if os.system(cmd) != 0:
+        for _ in range(3):
+            if os.system(cmd) == 0:
+                break
+        else:
             print('Failed to send message to the web page')
-            return
 
         print('Done')
         cmd = 'mosquitto_pub -t /voicen/hey_wifi -m 4'
