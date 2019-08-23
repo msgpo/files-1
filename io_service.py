@@ -70,6 +70,7 @@ class LED1x4(object):
         self.raw(~value)
 
     def mask(self, value, mask):
+        value = 1 - value
         for i in range(4):
             if (mask >> i) & 1:
                 self.leds[i].write(value)
