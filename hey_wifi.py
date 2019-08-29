@@ -11,7 +11,6 @@ else:
     import queue
 
 import base64
-import hashlib
 import json
 import threading
 import signal
@@ -77,7 +76,11 @@ class Decoder(object):
             audio = audio.astype('float32')
             data = decoder.decode(audio)
             if data is not None:
-                self.on_data(data)
+                try:
+                    self.on_data(data)
+                except Exception as e:
+                    print(e)
+                    pass
 
     def stop(self):
         self.done = True
@@ -96,14 +99,14 @@ def get_ip_info():
     return ip_info
 
 
-def encrypt(key, data):
-    m = hashlib.md5()
-    m.update(key)
-    counter = random.SystemRandom().randint(0, 1 << 15)
-    aes = AES.new(m.digest(), AES.MODE_CTR,
-                  counter=Counter.new(128, initial_value=counter))
+def encrypt(nonce, key, data):
+    key = key[::-1][:16]
+    key = key.ljust(16, b'\x00')
+    print((nonce, [c for c in key], [c for c in data]))
+    aes = AES.new(key, AES.MODE_CTR,
+                  counter=Counter.new(128, initial_value=nonce))
     encrypted = aes.encrypt(data)
-    return {'id': counter, 'data': base64.b64encode(encrypted).decode()}
+    return base64.b64encode(encrypted).decode()
 
 
 def main():
@@ -112,12 +115,13 @@ def main():
     decoder = Decoder(channels=src.channels, select=0, bits_per_sample=32)
 
     def on_data(data):
+        print([c for c in data])
         ssid_length = data[0]
         ssid = data[1:ssid_length + 1].tostring().decode('utf-8')
         password_length = data[ssid_length + 1]
         password = data[ssid_length + 2:ssid_length +
                         password_length + 2].tostring().decode('utf-8')
-        print('SSID: {}\nPassword: {}'.format(ssid, password))
+        # print(u'SSID: {}\nPassword: {}'.format(ssid, password))
 
         cmd = 'mosquitto_pub -t /voicen/hey_wifi -m 2'
         os.system(cmd)
@@ -129,10 +133,10 @@ def main():
         cmd = 'nmcli device wifi rescan'
         os.system(cmd)
 
-        cmd = 'nmcli connection delete "{}"'.format(ssid)
+        cmd = u'nmcli connection delete "{}"'.format(ssid)
         os.system(cmd)
 
-        cmd = 'nmcli device wifi connect {} password {}'.format(ssid, password)
+        cmd = u'nmcli device wifi connect "{}" password "{}"'.format(ssid, password)
         if os.system(cmd) != 0:
             print('Failed to connect the Wi-Fi network')
             return
@@ -149,11 +153,15 @@ def main():
         cmd = 'mosquitto_pub -t /voicen/hey_wifi -m 3'
         os.system(cmd)
 
-        message = encrypt(data, ip_info)
+        nonce = int((data[-1] << 8) + data[-2])
+        key = data.tostring()
+        payload = json.dumps({'id': nonce, 'data': ip_info.decode()})
+        message = encrypt(nonce, key, payload.encode())
         if os.system('which mosquitto_pub >/dev/null') != 0:
             print('mosquitto_pub is not found')
 
-        cmd = "mosquitto_pub -h v.tangram7.net -u mqtt -P mqtt -q 1 -t '/voicen/channel' -m '{}'".format(json.dumps(message))
+        cmd = "mosquitto_pub -h v.tangram7.net -u mqtt -P mqtt -q 1 -t '/voicen/hey_wifi' -m '{}'".format(
+            message)
         print(cmd)
         for _ in range(3):
             if os.system(cmd) == 0:
