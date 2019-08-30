@@ -12,6 +12,7 @@ else:
 
 import base64
 import json
+import hashlib
 import threading
 import signal
 import subprocess
@@ -99,12 +100,14 @@ def get_ip_info():
     return ip_info
 
 
-def encrypt(nonce, key, data):
-    key = key[::-1][:16]
-    key = key.ljust(16, b'\x00')
-    print((nonce, [c for c in key], [c for c in data]))
+def encrypt(n, key, data):
+    sha256 = hashlib.sha256()
+    sha256.update(key)
+    digest = sha256.digest()
+    key = digest[:16]
+    print((n, [c for c in key], [c for c in data]))
     aes = AES.new(key, AES.MODE_CTR,
-                  counter=Counter.new(128, initial_value=nonce))
+                  counter=Counter.new(128, initial_value=n))
     encrypted = aes.encrypt(data)
     return base64.b64encode(encrypted).decode()
 
@@ -153,15 +156,14 @@ def main():
         cmd = 'mosquitto_pub -t /voicen/hey_wifi -m 3'
         os.system(cmd)
 
-        nonce = int((data[-1] << 8) + data[-2])
-        key = data.tostring()
-        payload = json.dumps({'id': nonce, 'data': ip_info.decode()})
-        message = encrypt(nonce, key, payload.encode())
+        channel = int((data[-1] << 8) + data[-2])
+        payload = json.dumps({'id': channel, 'data': ip_info.decode()})
+        message = encrypt(channel, data, payload.encode())
         if os.system('which mosquitto_pub >/dev/null') != 0:
             print('mosquitto_pub is not found')
 
-        cmd = "mosquitto_pub -h v.tangram7.net -u mqtt -P mqtt -q 1 -t '/voicen/hey_wifi' -m '{}'".format(
-            message)
+        cmd = 'mosquitto_pub -h v.tangram7.net -u mqtt -P mqtt -q 1 -t "/voicen/hey_wifi/{}" -m "{}"'.format(
+            channel, message)
         print(cmd)
         for _ in range(3):
             if os.system(cmd) == 0:
