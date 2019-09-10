@@ -162,7 +162,7 @@ def main():
         if os.system('which mosquitto_pub >/dev/null') != 0:
             print('mosquitto_pub is not found')
 
-        cmd = 'mosquitto_pub -h v.tangram7.net -u mqtt -P mqtt -q 1 -t "/voicen/hey_wifi/{}" -m "{}"'.format(
+        cmd = 'mosquitto_pub -h q.voicen.io -u mqtt -P mqtt -q 1 -t "/voicen/hey_wifi/{}" -m "{}"'.format(
             channel, message)
         print(cmd)
         for _ in range(3):
