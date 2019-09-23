@@ -4,7 +4,6 @@
 SRC=$(dirname "$BASH_SOURCE")
 cd $SRC
 
-chmod a+x hey_wifi hey_wifi.py io_service.py play amp
 
 mkdir -p /usr/local/bin
 cp hey_wifi hey_wifi.py io_service.py play amp /usr/local/bin
