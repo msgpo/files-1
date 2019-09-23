@@ -1,0 +1,23 @@
+#!/bin/sh
+
+if [ $# -eq 0 ]
+then
+    echo "Usage: $0 [on/off]"
+    exit 0
+fi
+
+if [ "$1" = "on" ]
+then
+    value=1
+else
+    value=0
+fi
+
+systemctl is-active io.service > /dev/null
+active=$?
+if [ $active -eq 0 ]
+then
+    mosquitto_pub -t /voicen/amp -m $value
+else
+    sudo sunxi-pio -m PA2=$value PA3=$value
+fi
