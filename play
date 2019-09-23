@@ -1,0 +1,35 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]
+then
+    echo "Usage: $0 [AUDIO]"
+    exit 0
+fi
+
+CAPS=${1^^}
+EXT=${CAPS: -4}
+
+pidof ec 1>/dev/null
+CONTEXT=$?
+if [ $CONTEXT -ne 0 ]
+then
+    # Before turning on the AMP, setup codec to avoid popping sound
+    head -c 96000 /dev/zero | aplay -t raw -f dat -q - 
+    amp on
+fi
+
+if [ "${EXT}" == ".WAV" ]
+then
+    aplay "$1"
+elif [ "${EXT}" == ".MP3" ]
+then
+    mpg123 "$1"
+else
+    echo "${EXT} is not supported"
+fi
+
+if [ $CONTEXT -ne 0 ]
+then
+    sleep 0.1
+    amp off
+fi
