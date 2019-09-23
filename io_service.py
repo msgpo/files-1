@@ -140,7 +140,10 @@ class LEDAgent(object):
 
     def __getattr__(self, attr):
 
-        func = getattr(self.leds, attr)
+        func = getattr(self.leds, attr, None)
+
+        if func is None or not callable(func):
+            return func
 
         def func_warp(*args, **kargs):
             self.leds.call((func, args, kargs))
@@ -240,7 +243,7 @@ def str2int(s):
 
 def on_message(mqttc, obj, msg):
     print(msg.topic)
-    if msg.topic == '/voicen/amplifier':
+    if msg.topic == '/voicen/amp':
         if msg.payload == b'1':
             print('amp on')
             amplifier.on()
@@ -250,6 +253,12 @@ def on_message(mqttc, obj, msg):
 
     elif msg.topic == '/voicen/leds/value':
         leds.value(str2int(msg.payload.decode()))
+    elif msg.topic == '/voicen/leds/mode':
+        mode = msg.payload.decode()
+        if mode in ('on_press', 'on_release', 'on_wakeup', 'on_listen', 'on_wait', 'on_finish',
+                    'step', 'loop', 'wipe', 'blink'):
+            func = getattr(leds, mode)
+            func()
     elif msg.topic == '/voicen/hey_wifi':
         hey_wifi_service.state = (int(msg.payload.decode()))
         if hey_wifi_service.state:
@@ -263,7 +272,7 @@ def on_message(mqttc, obj, msg):
 def on_connect(mqttc, obj, flags, rc):
     print('connected - rc: ' + str(rc))
     mqttc.subscribe('/voicen/leds/#', 0)
-    mqttc.subscribe('/voicen/amplifier', 0)
+    mqttc.subscribe('/voicen/amp', 0)
     mqttc.subscribe('/voicen/hey_wifi', 0)
 
 
