@@ -114,7 +114,7 @@ def encrypt(n, key, data):
 
 def main():
     src = Source(rate=48000, channels=4,
-                 device_name='ac108', bits_per_sample=32)
+                 device_name='voicen', bits_per_sample=32)
     decoder = Decoder(channels=src.channels, select=0, bits_per_sample=32)
 
     def on_data(data):
