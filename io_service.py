@@ -267,6 +267,25 @@ def on_message(mqttc, obj, msg):
             leds.blink(mask)
         else:
             leds.value(0x0)
+    elif msg.topic == '/voicen/pcm/open':
+        pid = int(msg.payload.decode())
+        mqttc.pcm_apps.append(pid)
+
+        def amp_on():
+            if mqttc.pcm_apps:
+                print('amp on')
+                amplifier.on()
+        threading.Timer(0.1, amp_on).start()
+    elif msg.topic == '/voicen/pcm/close':
+        pid = int(msg.payload.decode())
+        if pid in mqttc.pcm_apps:
+            mqttc.pcm_apps.remove(pid)
+
+        def amp_off():
+            if not mqttc.pcm_apps:
+                print('amp off')
+                amplifier.off()
+        threading.Timer(0.1, amp_off).start()
 
 
 def on_connect(mqttc, obj, flags, rc):
@@ -274,6 +293,7 @@ def on_connect(mqttc, obj, flags, rc):
     mqttc.subscribe('/voicen/leds/#', 0)
     mqttc.subscribe('/voicen/amp', 0)
     mqttc.subscribe('/voicen/hey_wifi', 0)
+    mqttc.subscribe('/voicen/pcm/#', 0)
 
 
 def on_publish(mqttc, obj, mid):
@@ -296,6 +316,7 @@ mqttc.on_subscribe = on_subscribe
 
 mqttc.connect('localhost', 1883, 60)
 
+mqttc.pcm_apps = []
 
 threading.Thread(target=button_task, args=(mqttc,), daemon=True).start()
 
