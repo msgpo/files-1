@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+import json
 import os
 import time
 import threading
@@ -194,6 +195,10 @@ def button_task(mqttc):
 
     while True:
         result = button.wait()
+        try:
+            mqttc.publish('/voicen/touch', json.dumps({'event': result[0], 'timestamp': result[1]}))
+        except Exception:
+            pass
         if result and result[0] == 1:
             leds.on_press()
             t1 = result[1]
@@ -212,6 +217,10 @@ def button_task(mqttc):
             if result is None:
                 result = button.wait()
 
+            try:
+                mqttc.publish('/voicen/touch', json.dumps({'event': result[0], 'timestamp': result[1]}))
+            except Exception:
+                pass
             t2 = result[1]
             dt = t2 - t1
             print(dt)
